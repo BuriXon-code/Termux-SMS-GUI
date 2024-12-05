@@ -1,0 +1,58 @@
+#!/bin/bash
+
+if [[ -z $DISPLAY ]]; then
+	echo -e "\n\e[31mCannot open display..." >&2
+	echo -e "Are you running desktop?\n" >&2
+	echo -e "\nMake sure you have a VNC server,\ngraphical environment and\nGTK packages configured.\n" >&2
+	exit 1
+fi
+
+if ! command -v termux-sms-send &>/dev/null; then
+	zenity --error --text="termux-api is not installed!" --title="Error" 2>/dev/null
+	exit 1
+fi
+
+operators=$(getprop gsm.operator.alpha | tr ',' '|')
+
+form_output=$(zenity --forms --title="Send SMS" --text="Message form" \
+	--add-combo="SIM Card:" --combo-values="$operators" \
+	--add-entry="Phone Number:" \
+	--add-entry="Message Text:" --width=400 --height=300) 2>/dev/null
+
+if [ $? -ne 0 ]; then
+	zenity --info --text="Operation canceled." --title="Info" 2>/dev/null
+	exit 0
+fi
+
+operator=$(echo "$form_output" | cut -d'|' -f1)
+recipient=$(echo "$form_output" | cut -d'|' -f2)
+message=$(echo "$form_output" | cut -d'|' -f3)
+
+# Validate all fields are filled
+if [[ -z "$operator" || -z "$recipient" || -z "$message" ]]; then
+	zenity --error --text="All fields are required!" --title="Error" 2>/dev/null
+	exit 1
+fi
+
+# Normalize phone number (remove all spaces, dashes, and other non-digit/plus characters)
+normalized_recipient=$(echo "$recipient" | sed 's/[^+0-9]//g')
+
+# Validate phone number format
+if ! [[ "$normalized_recipient" =~ ^\+?[0-9]+$ ]]; then
+	zenity --error --text="Invalid phone number format!" --title="Error" 2>/dev/null
+	exit 1
+fi
+
+sim_index=$(getprop gsm.operator.alpha | tr ',' '\n' | nl -v0 | grep -i "$operator" | awk '{print $1}')
+if [ -z "$sim_index" ]; then
+	zenity --error --text="Operator not recognized!" --title="Error" 2>/dev/null
+	exit 1
+fi
+
+# Attempt to send SMS with a timeout
+if timeout 10s termux-sms-send -s "$sim_index" -n "$normalized_recipient" "$message"; then
+	zenity --info --text="Message sent successfully!" --title="Success" 2>/dev/null
+else
+	zenity --error --text="Termux:API is not configured or failed to send message!" --title="Error" 2>/dev/null
+	exit 1
+fi
