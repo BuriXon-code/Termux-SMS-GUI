@@ -1,0 +1,9 @@
+[Desktop Entry]
+Version=1.0
+Name=SMS
+Comment=Send SMS in Termux X11
+Exec=/data/data/com.termux/files/usr/bin/sms-gui
+Icon=messengerfordesktop
+Terminal=false
+Type=Application
+Categories=Internet
