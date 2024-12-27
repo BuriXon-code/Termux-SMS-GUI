@@ -37,6 +37,7 @@ You can search for "**SMS**" on the list of installed applications/packages and 
 
 > [!WARNING]
 > Due to the reduced speech compatibility of the zenity versions with XFCE4, Fluxbox etc., the dialog box can be delayed. Pressing the zenity icon several times on the application panel (minimizing and maximizing) helps the windows to appear.
+> 
 > I am currently working on solving the problem.
 
 ## What is sms.desktop file?...
